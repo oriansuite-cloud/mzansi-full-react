@@ -1,0 +1,78 @@
+{
+  "zone": "mzansibusinessmail.co.za",
+  "observedAt": "2026-11-17",
+  "observation": "Public recursive DNS answers from 1.1.1.1, 8.8.8.8 and 9.9.9.9. Not an authenticated provider-zone export.",
+  "resolverAddresses": [
+    "1.1.1.1",
+    "8.8.8.8",
+    "9.9.9.9"
+  ],
+  "nameServers": [
+    "ns1.tld-ns.com",
+    "ns2.tld-ns.net",
+    "ns3.tld-ns.com",
+    "ns4.tld-ns.net"
+  ],
+  "transferCompleteProved": false,
+  "hostingAddressVerifiedByService": false,
+  "mailOutgoingAddressVerifiedByService": false,
+  "existing": [
+    {
+      "name": "@",
+      "type": "A",
+      "content": "45.63.3.207",
+      "ttl": 3600
+    },
+    {
+      "name": "mail",
+      "type": "A",
+      "content": "45.63.3.207",
+      "ttl": 3600
+    },
+    {
+      "name": "@",
+      "type": "MX",
+      "content": "mail.mzansibusinessmail.co.za",
+      "ttl": 3600,
+      "priority": 0
+    }
+  ],
+  "contributions": [
+    {
+      "producer": "hosting",
+      "records": [
+        {
+          "name": "@",
+          "type": "A",
+          "content": "45.63.3.207",
+          "ttl": 3600
+        }
+      ]
+    },
+    {
+      "producer": "mail",
+      "records": [
+        {
+          "name": "mail",
+          "type": "A",
+          "content": "45.63.3.207",
+          "ttl": 3600
+        },
+        {
+          "name": "@",
+          "type": "MX",
+          "content": "mail.mzansibusinessmail.co.za",
+          "ttl": 3600,
+          "priority": 0
+        }
+      ]
+    }
+  ],
+  "missingMailEvidence": [
+    "mail sender IP and policy for SPF",
+    "DKIM public TXT value and selector issued by the Mail VPS",
+    "DMARC policy and reporting recipients"
+  ],
+  "publishingAllowed": false,
+  "status": "read-only baseline; service receipts and owner authorization pending"
+}

@@ -4,8 +4,9 @@ import { env } from "../lib/env.ts";
 import * as authSchema from "./schema/auth.ts";
 import * as projectsSchema from "./schema/projects.ts";
 import * as hostingSchema from "./schema/hosting.ts";
+import * as dnsSchema from "./schema/dns.ts";
 
-const schema = { ...authSchema, ...projectsSchema, ...hostingSchema };
+const schema = { ...authSchema, ...projectsSchema, ...hostingSchema, ...dnsSchema };
 
 const client = postgres(env.DATABASE_URL, {
 	// Connection pool settings — tune these for your workload.

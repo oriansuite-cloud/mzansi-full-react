@@ -1,0 +1,109 @@
+{
+  "zone": "mzansibusinessmail.co.za",
+  "provider": "domains.co.za-premium",
+  "mode": "preview-only",
+  "baseline": "caller-supplied-unverified",
+  "publicationAllowed": false,
+  "digest": "f7f967761245bf326451797e9242acd23af29ad64dcfa670491cb5659aad9863",
+  "desired": [
+    {
+      "name": "mail.mzansibusinessmail.co.za",
+      "type": "A",
+      "content": "45.63.3.207",
+      "ttl": 3600,
+      "priority": 0,
+      "producer": "mail"
+    },
+    {
+      "name": "mzansibusinessmail.co.za",
+      "type": "A",
+      "content": "45.63.3.207",
+      "ttl": 3600,
+      "priority": 0,
+      "producer": "hosting"
+    },
+    {
+      "name": "mzansibusinessmail.co.za",
+      "type": "MX",
+      "content": "mail.mzansibusinessmail.co.za",
+      "ttl": 3600,
+      "priority": 0,
+      "producer": "mail"
+    }
+  ],
+  "diff": [
+    {
+      "action": "unchanged",
+      "producer": "mail",
+      "record": {
+        "name": "mail.mzansibusinessmail.co.za",
+        "type": "A",
+        "content": "45.63.3.207",
+        "ttl": 3600,
+        "priority": 0,
+        "producer": "mail"
+      }
+    },
+    {
+      "action": "unchanged",
+      "producer": "hosting",
+      "record": {
+        "name": "mzansibusinessmail.co.za",
+        "type": "A",
+        "content": "45.63.3.207",
+        "ttl": 3600,
+        "priority": 0,
+        "producer": "hosting"
+      }
+    },
+    {
+      "action": "unchanged",
+      "producer": "mail",
+      "record": {
+        "name": "mzansibusinessmail.co.za",
+        "type": "MX",
+        "content": "mail.mzansibusinessmail.co.za",
+        "ttl": 3600,
+        "priority": 0,
+        "producer": "mail"
+      }
+    }
+  ],
+  "existingPreserved": [
+    {
+      "name": "mail.mzansibusinessmail.co.za",
+      "type": "A",
+      "content": "45.63.3.207",
+      "ttl": 3600,
+      "priority": 0
+    },
+    {
+      "name": "mzansibusinessmail.co.za",
+      "type": "A",
+      "content": "45.63.3.207",
+      "ttl": 3600,
+      "priority": 0
+    },
+    {
+      "name": "mzansibusinessmail.co.za",
+      "type": "MX",
+      "content": "mail.mzansibusinessmail.co.za",
+      "ttl": 3600,
+      "priority": 0
+    }
+  ],
+  "conflicts": [],
+  "warnings": [
+    "SPF TXT record not contributed; do not assume mail-sending IP.",
+    "DMARC TXT record not contributed.",
+    "DKIM public key not contributed; it must originate from the Mail VPS."
+  ],
+  "gates": [
+    "MBC Hosting Engine verifies paid entitlement and tenant ownership",
+    "Hosting VPS and Mail VPS return authenticated provisioning receipts",
+    "Mail VPS supplies public DKIM, SPF sending policy, MX and DMARC",
+    "Domains.co.za authoritative zone snapshot checked for drift and preservation",
+    "Privileged operator approves idempotent DNS changes and audit receipt",
+    "DNS changes verified against provider and public authoritative nameservers"
+  ]
+}

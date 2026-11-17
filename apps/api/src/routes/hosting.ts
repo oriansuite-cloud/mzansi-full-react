@@ -5,6 +5,9 @@ import { db } from "../db/index.ts";
 import { hostingTenant, hostingDomain, hostingApplication } from "../db/schema/hosting.ts";
 import { requireAuth, type AuthEnv } from "../middleware/auth.ts";
 import { searchDomain, DomainSearchError } from "../lib/domain-search.ts";
+import { composeZone, ZoneValidationError } from "../lib/dns-zone.ts";
+import { previewAddEntry, readPremiumZone, ProviderDnsError } from "../lib/domains-premium-dns.ts";
+import { hostingDnsDraft, hostingDnsAudit } from "../db/schema/dns.ts";
 
 export const hostingRoutes = new Hono<AuthEnv>();
 hostingRoutes.use("*", requireAuth);
@@ -74,6 +77,152 @@ hostingRoutes.get("/domain-search", async (c) => {
     }
     return c.json({ error: { code: "DOMAIN_LOOKUP", message: "Domain lookup unavailable." } }, 503);
   }
+});
+
+// DNS orchestration Stage 1: authenticated PREVIEW only.
+ // MBC Hosting Engine will later persist approved jobs and supply service receipts.
+const zoneRecordInput = z.object({
+  name: z.string().max(253),
+  type: z.enum(["A", "AAAA", "CNAME", "MX", "TXT", "CAA", "SRV"]),
+  content: z.string().min(1).max(4096),
+  ttl: z.number().int().optional(),
+  priority: z.number().int().optional(),
+});
+const zoneComposeInput = z.object({
+  tenantId: z.string().uuid(),
+  zone: z.string().min(4).max(253),
+  contributions: z.array(z.object({
+    producer: z.enum(["hosting", "mail", "verification"]),
+    receiptRef: z.string().max(120).optional(),
+    records: z.array(zoneRecordInput).max(80),
+  })).max(12),
+  existing: z.array(zoneRecordInput).max(500).default([]),
+}).strict();
+
+hostingRoutes.post("/dns/compose", async (c) => {
+  const parsed = await parseInput(c.req.raw, zoneComposeInput);
+  if (!parsed) return c.json({ error: {
+    code: "VALIDATION_ERROR", message: "Invalid DNS zone composition request",
+  } }, 422);
+  if (!await ownedTenant(parsed.tenantId, c.get("user").id)) {
+    return c.json({ error: { code: "FORBIDDEN", message: "Tenant not found" } }, 403);
+  }
+  try {
+    const plan = composeZone(parsed.zone, parsed.contributions, parsed.existing);
+    return c.json({
+      data: {
+        ...plan,
+        providerEntryPreviews: plan.diff.filter((row) => row.action === "add")
+          .map((row) => previewAddEntry(plan.zone, row.record)),
+      },
+      persisted: false,
+      published: false,
+      message: "Preview only. MBC Hosting Engine workflow and registrar DNS writes remain disabled.",
+    });
+  } catch (err) {
+    if (err instanceof ZoneValidationError || err instanceof Error) {
+      return c.json({ error: {
+        code: "INVALID_ZONE", message: err instanceof ZoneValidationError
+          ? err.message : "Unable to compose DNS plan.",
+      } }, 422);
+    }
+    return c.json({ error: { code: "INVALID_ZONE", message: "Invalid DNS request." } }, 422);
+  }
+});
+
+// Persist a DNS plan as a deduplicated draft with an immutable creation receipt.
+ // Does NOT submit any registration, nameserver, or DNS changes to Domains.co.za.
+// Read-only authoritative provider snapshot. Unavailable until a private
+// Domains.co.za bearer token is installed; never falls back to public DNS as
+// proof of ownership or a complete zone export.
+hostingRoutes.get("/dns/provider-zone", async (c) => {
+  const tenantId = c.req.query("tenantId");
+  const zone = c.req.query("zone");
+  if (!tenantId || !z.string().uuid().safeParse(tenantId).success || !zone) {
+    return c.json({ error: { code: "VALIDATION_ERROR", message: "Tenant and zone required" } }, 422);
+  }
+  if (!await ownedTenant(tenantId, c.get("user").id)) {
+    return c.json({ error: { code: "FORBIDDEN", message: "Tenant not found" } }, 403);
+  }
+  if (!process.env.MZC_DOMAINS_API_TOKEN) {
+    return c.json({ error: { code: "NOT_CONFIGURED",
+      message: "Private Domains.co.za Premium DNS API token not installed.",
+    } }, 503);
+  }
+  try {
+    return c.json({ data: await readPremiumZone(zone), mutationAllowed: false });
+  } catch (err) {
+    return c.json({ error: { code: "PROVIDER_READ_FAILED",
+      message: err instanceof ProviderDnsError ? err.message : "Provider DNS read failed",
+    } }, 503);
+  }
+});
+
+hostingRoutes.post("/dns/drafts", async (c) => {
+  const parsed = await parseInput(c.req.raw, zoneComposeInput);
+  if (!parsed) return c.json({ error: { code: "VALIDATION_ERROR", message: "Invalid DNS draft" } }, 422);
+  const actorId = c.get("user").id;
+  if (!await ownedTenant(parsed.tenantId, actorId)) {
+    return c.json({ error: { code: "FORBIDDEN", message: "Tenant not found" } }, 403);
+  }
+  let plan;
+  try {
+    plan = composeZone(parsed.zone, parsed.contributions, parsed.existing);
+  } catch (err) {
+    return c.json({ error: {
+      code: "INVALID_ZONE", message: err instanceof ZoneValidationError ? err.message : "Invalid DNS records",
+    } }, 422);
+  }
+  const row = await db.transaction(async (tx) => {
+    const [saved] = await tx.insert(hostingDnsDraft).values({
+      id: crypto.randomUUID(), tenantId: parsed.tenantId, actorId,
+      zone: plan.zone, digest: plan.digest, plan, status: "draft",
+    }).onConflictDoNothing().returning();
+    if (saved) {
+      await tx.insert(hostingDnsAudit).values({
+        id: crypto.randomUUID(), draftId: saved.id, actorId,
+        event: "dns.draft.created", digest: plan.digest,
+      });
+      return { record: saved, newlyCreated: true };
+    }
+    const [existing] = await tx.select().from(hostingDnsDraft)
+      .where(and(eq(hostingDnsDraft.tenantId, parsed.tenantId),
+        eq(hostingDnsDraft.zone, plan.zone), eq(hostingDnsDraft.digest, plan.digest))).limit(1);
+    if (!existing) throw new Error("DNS draft could not be retrieved");
+    return { record: existing, newlyCreated: false };
+  });
+  return c.json({
+    data: { id: row.record.id, zone: row.record.zone,
+      digest: row.record.digest, status: row.record.status, plan: row.record.plan },
+    published: false, newlyCreated: row.newlyCreated,
+  }, row.newlyCreated ? 201 : 200);
+});
+
+hostingRoutes.get("/dns/drafts", async (c) => {
+  const tenantId = c.req.query("tenantId");
+  if (!tenantId || !z.string().uuid().safeParse(tenantId).success) {
+    return c.json({ error: { code: "VALIDATION_ERROR", message: "Valid tenant ID required" } }, 422);
+  }
+  if (!await ownedTenant(tenantId, c.get("user").id)) {
+    return c.json({ error: { code: "FORBIDDEN", message: "Tenant not found" } }, 403);
+  }
+  const records = await db.select({
+    id: hostingDnsDraft.id, zone: hostingDnsDraft.zone, digest: hostingDnsDraft.digest,
+    status: hostingDnsDraft.status, createdAt: hostingDnsDraft.createdAt,
+  }).from(hostingDnsDraft).where(eq(hostingDnsDraft.tenantId, tenantId))
+    .orderBy(desc(hostingDnsDraft.createdAt)).limit(50);
+  return c.json({ data: records, publicationEnabled: false });
+});
+
+hostingRoutes.get("/dns/drafts/:id", async (c) => {
+  const id = c.req.param("id");
+  const actorId = c.get("user").id;
+  const [record] = await db.select({ draft: hostingDnsDraft })
+    .from(hostingDnsDraft)
+    .innerJoin(hostingTenant, eq(hostingDnsDraft.tenantId, hostingTenant.id))
+    .where(and(eq(hostingDnsDraft.id, id), eq(hostingTenant.ownerId, actorId))).limit(1);
+  if (!record) return c.json({ error: { code: "NOT_FOUND", message: "Draft not found" } }, 404);
+  return c.json({ data: record.draft, published: false });
 });
 
 hostingRoutes.get("/overview", async (c) => {
