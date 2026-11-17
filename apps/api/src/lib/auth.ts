@@ -11,6 +11,17 @@ export const auth = betterAuth({
 		schema,
 	}),
 	secret: env.BETTER_AUTH_SECRET,
+  // Google sign-in is optional and can only attach to an existing invited user.
+  // Provider secrets remain server-side. Never open public implicit registration.
+  socialProviders: process.env.MZC_GOOGLE_CLIENT_ID && process.env.MZC_GOOGLE_CLIENT_SECRET
+    ? { google: {
+        clientId: process.env.MZC_GOOGLE_CLIENT_ID,
+        clientSecret: process.env.MZC_GOOGLE_CLIENT_SECRET,
+        disableSignUp: true,
+        disableImplicitSignUp: true,
+      } }
+    : {},
+
 	baseURL: env.BETTER_AUTH_URL,
 	emailAndPassword: {
 		enabled: true,

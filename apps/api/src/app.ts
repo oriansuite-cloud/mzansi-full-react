@@ -15,6 +15,8 @@ import { authRoutes } from "./routes/auth.ts";
 import { fileDownloadRoutes } from "./routes/files.ts";
 import { healthRoutes } from "./routes/health.ts";
 import { hostingRoutes } from "./routes/hosting.ts";
+import { approvedHostingCatalog, hostingCatalogSourceSha256 } from "./lib/hosting-catalog.ts";
+import { searchDomain, DomainSearchError } from "./lib/domain-search.ts";
 import { notificationRoutes } from "./routes/notifications.ts";
 import { projectRoutes } from "./routes/projects.ts";
 import { testRoutes } from "./routes/test.ts";
@@ -94,6 +96,29 @@ app.use("*", apiLimiter);
 app.use("/api/auth/*", authLimiter);
 
 // ── Routes ─────────────────────────────────────────────────────────
+app.get("/api/public/domains/search", async (c) => {
+  try {
+    const result = await searchDomain(c.req.query("domain"));
+    c.header("Cache-Control", "private, max-age=30");
+    return c.json({ data: result });
+  } catch (error) {
+    if (error instanceof DomainSearchError) {
+      return c.json({ error: { code: "DOMAIN_LOOKUP", message: error.message } }, error.status === 422 ? 422 : 503);
+    }
+    return c.json({ error: { code: "DOMAIN_LOOKUP", message: "Registrar unavailable." } }, 503);
+  }
+});
+app.get("/api/public/catalog", (c) => c.json({
+  data: approvedHostingCatalog,
+  source: "reviewed-mbc-hosting-engine-catalog",
+  sourceSha256: hostingCatalogSourceSha256,
+  checkoutEnabled: false,
+  note: "Catalog reference only; merchant authorization and paid provisioning not yet activated.",
+}));
+app.get("/api/public/config", (c) => c.json({
+  googleSignInEnabled: Boolean(process.env.MZC_GOOGLE_CLIENT_ID && process.env.MZC_GOOGLE_CLIENT_SECRET),
+  registrationOpen: false,
+}));
 app.route("/api/auth", authRoutes);
 app.route("/api/files", fileDownloadRoutes);
 app.route("/api/health", healthRoutes);

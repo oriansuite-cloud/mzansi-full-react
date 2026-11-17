@@ -19,6 +19,10 @@ bash "$SCRIPT" install --edition corporate --dry-run | grep -q 'No changes made'
 pass corporate-dry-run
 bash "$SCRIPT" install --edition reseller --dry-run | grep -q 'No changes made'
 pass reseller-dry-run
+bash "$SCRIPT" install --edition corporate --dry-run | grep -q 'Komodo=true, Technitium=false'
+pass dns-default-is-disabled
+bash "$SCRIPT" install --with-technitium --dry-run | grep -q 'Komodo=true, Technitium=true'
+pass optional-technitium-flag
 bash "$SCRIPT" install --without-komodo --without-dns --dry-run | grep -q 'Komodo=false, Technitium=false'
 pass optional-service-flags
 rejects install --edition unknown --dry-run

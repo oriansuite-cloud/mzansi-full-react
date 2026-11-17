@@ -1,0 +1,25 @@
+# VPS-1 ONLY. Transitional read-only Domains.co.za registrar bridge.
+# Do not ship as an enabled default in a clean installation.
+# No public ports or legacy services modified.
+services:
+  api:
+    environment:
+      MZC_DOMAINS_BRIDGE_URL: "http://legacy-domain-bridge:8789/lookup"
+  legacy-domain-bridge:
+    image: mzansi-hosting-v0-api
+    restart: unless-stopped
+    command: ["node", "/bridge/legacy-domain-bridge.mjs"]
+    volumes:
+      - ./legacy-domain-bridge.mjs:/bridge/legacy-domain-bridge.mjs:ro
+    networks:
+      - private
+      - legacy-store
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8789/health').then(r=>process.exit(r.status===200?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 4s
+      retries: 3
+networks:
+  legacy-store:
+    external: true
+    name: mzansicloud_platform_default

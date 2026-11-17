@@ -13,7 +13,7 @@ EDITION=corporate
 CONFIG_DIR="${MZC_CONFIG_DIR:-/etc/mzansicloud-box}"
 HTTP_PORT="${MZC_HTTP_PORT:-8788}"
 WITH_KOMODO=true
-WITH_DNS=true
+WITH_DNS=false
 DRY_RUN=false
 
 usage() {
@@ -31,7 +31,8 @@ Options:
   --config-dir /absolute/private/config/path
   --http-port 8788
   --without-komodo       do not install/check Komodo
-  --without-dns          do not install/check Technitium
+  --with-technitium      optional internal DNS lab (last phase)
+  --without-dns          compatibility alias: skip Technitium
   --dry-run              preview; perform NO writes
   --help
 
@@ -60,6 +61,7 @@ while (( $# )); do
     --config-dir) (( $# >= 2 )) || fail "Missing --config-dir value"; CONFIG_DIR="$2"; shift 2;;
     --http-port) (( $# >= 2 )) || fail "Missing --http-port value"; HTTP_PORT="$2"; shift 2;;
     --without-komodo) WITH_KOMODO=false; shift;;
+    --with-technitium) WITH_DNS=true; shift;;
     --without-dns) WITH_DNS=false; shift;;
     --dry-run) DRY_RUN=true; shift;;
     --help|-h) usage; exit 0;;
@@ -158,7 +160,7 @@ BETTER_AUTH_URL=http://127.0.0.1:$HTTP_PORT
 FRONTEND_URL=http://127.0.0.1:$HTTP_PORT
 MZC_ALLOW_SIGNUP=false
 MZC_EDITION=$EDITION
-MZC_TECHNITIUM_HEALTH_URL=http://mzansi-technitium-dns-1:5380/
+MZC_DNS_PROVIDER=domains.co.za
 ENV
   chmod 600 "$tmp"
   mv -n "$tmp" "$APP_ENV"
@@ -232,6 +234,6 @@ fi
 # Preserve the exit status of verification; no false success on partial deployment.
 args=(verify --edition "$EDITION" --http-port "$HTTP_PORT" --config-dir "$CONFIG_DIR")
 [[ "$WITH_KOMODO" == false ]] && args+=(--without-komodo)
-[[ "$WITH_DNS" == false ]] && args+=(--without-dns)
+[[ "$WITH_DNS" == true ]] && args+=(--with-technitium)
 "$0" "${args[@]}"
 info 'Operator bootstrap and production DNS/HTTPS cutover remain separate approval gates.'

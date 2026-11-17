@@ -6,7 +6,7 @@ import {
   ShieldCheck, Network,
 } from "lucide-react";
 import { useSession } from "@/lib/auth-client";
-import { hostingRequest, type HostingOverview, type Tenant } from "@/lib/hosting-client";
+import { hostingRequest, type HostingOverview, type Tenant, type DomainLookup } from "@/lib/hosting-client";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -33,6 +33,28 @@ function DashboardPage() {
   const [appName, setAppName] = useState("");
   const [runtime, setRuntime] = useState("container");
   const [source, setSource] = useState("");
+  const [lookupName, setLookupName] = useState("");
+  const [lookup, setLookup] = useState<DomainLookup | null>(null);
+  const [lookupPending, setLookupPending] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+
+  async function lookupDomain(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLookup(null);
+    setLookupError("");
+    setLookupPending(true);
+    try {
+      const response = await hostingRequest<{ data: DomainLookup }>(
+        "/domain-search?domain=" + encodeURIComponent(lookupName.trim().toLowerCase())
+      );
+      setLookup(response.data);
+    } catch (error) {
+      setLookupError(error instanceof Error ? error.message : "Registrar lookup failed");
+    } finally {
+      setLookupPending(false);
+    }
+  }
+
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -117,6 +139,31 @@ function DashboardPage() {
           <Metric icon={<Container className="size-5" />} label="Applications" number={data.counts.applications} detail="Deployments planned" />
           <Metric icon={<ShieldCheck className="size-5" />} label="Connected services" number={data.integrations.filter((x) => x.state === "reachable").length} detail="Live adapter reachability" />
         </div>
+
+        <section className="rounded-2xl border border-cyan-400/20 bg-[#10243a] p-5">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-white">
+            <Globe2 className="size-5 text-cyan-400"/> Live domain availability
+          </h2>
+          <p className="mt-1 text-sm text-slate-400">Registrar-backed lookup. Checking a name does not reserve or purchase it.</p>
+          <form onSubmit={(event) => void lookupDomain(event)} className="mt-4 flex flex-wrap gap-3">
+            <input className="mzc-input max-w-xl flex-1" aria-label="Domain to check"
+              placeholder="yourbusiness.co.za" required value={lookupName}
+              onChange={(event) => setLookupName(event.target.value)} />
+            <button disabled={lookupPending} type="submit"
+              className="rounded-lg bg-cyan-500 px-5 py-3 font-semibold text-[#062033] disabled:opacity-50">
+              {lookupPending ? "Checking registrar..." : "Check availability"}
+            </button>
+          </form>
+          {lookupError && <p role="alert" className="mt-3 text-sm text-rose-300">{lookupError}</p>}
+          {lookup && <div role="status" className="mt-4 flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-[#09192b] p-4">
+            <span className="font-semibold text-white">{lookup.domain}</span>
+            <span className={lookup.available ? "font-medium text-emerald-300" : "font-medium text-rose-300"}>
+              {lookup.available ? "Available" : "Taken"}
+            </span>
+            <span className="text-xs text-slate-400">{lookup.requiresQuote ? "Quotation required" : "Price ZAR " + lookup.priceZAR}</span>
+            <span className="ml-auto text-xs text-slate-500">Verified: {lookup.source}</span>
+          </div>}
+        </section>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
           <section className="rounded-2xl border border-white/10 bg-[#11233a] p-5 shadow-lg shadow-black/10">

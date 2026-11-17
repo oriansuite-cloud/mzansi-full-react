@@ -4,6 +4,7 @@ import { eq, desc, and } from "drizzle-orm";
 import { db } from "../db/index.ts";
 import { hostingTenant, hostingDomain, hostingApplication } from "../db/schema/hosting.ts";
 import { requireAuth, type AuthEnv } from "../middleware/auth.ts";
+import { searchDomain, DomainSearchError } from "../lib/domain-search.ts";
 
 export const hostingRoutes = new Hono<AuthEnv>();
 hostingRoutes.use("*", requireAuth);
@@ -53,6 +54,28 @@ async function probe(key: string, label: string) {
   }
 }
 
+const searchQuota = new Map<string, { requests: number; resetAt: number }>();
+hostingRoutes.get("/domain-search", async (c) => {
+  const userId = c.get("user").id;
+  const previous = searchQuota.get(userId);
+  const now = Date.now();
+  const usage = previous && now < previous.resetAt ? previous : { requests: 0, resetAt: now + 60_000 };
+  if (usage.requests >= 12) {
+    return c.json({ error: { code: "RATE_LIMIT", message: "Maximum 12 searches per minute." } }, 429);
+  }
+  usage.requests++;
+  if (searchQuota.size > 2000) searchQuota.clear();
+  searchQuota.set(userId, usage);
+  try {
+    return c.json({ data: await searchDomain(c.req.query("domain")) });
+  } catch (error) {
+    if (error instanceof DomainSearchError) {
+      return c.json({ error: { code: "DOMAIN_LOOKUP", message: error.message } }, error.status === 422 ? 422 : 503);
+    }
+    return c.json({ error: { code: "DOMAIN_LOOKUP", message: "Domain lookup unavailable." } }, 503);
+  }
+});
+
 hostingRoutes.get("/overview", async (c) => {
   const ownerId = c.get("user").id;
   const [tenants, domains, applications, integrations] = await Promise.all([
@@ -70,7 +93,7 @@ hostingRoutes.get("/overview", async (c) => {
       .where(eq(hostingTenant.ownerId, ownerId)).orderBy(desc(hostingApplication.createdAt)).limit(150),
     Promise.all([
       probe("MZC_KOMODO_HEALTH_URL", "Komodo"),
-      probe("MZC_TECHNITIUM_HEALTH_URL", "Technitium DNS"),
+      probe("MZC_DNS_PROVIDER_HEALTH_URL", "Domains.co.za Managed DNS"),
       probe("MZC_ENGINE_HEALTH_URL", "MBC Hosting Engine"),
     ]),
   ]);

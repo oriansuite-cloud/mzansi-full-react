@@ -9,7 +9,7 @@
 | Target | White-label reseller hosting business | Customer-owned private hosting |
 | Accounts | Reseller and customer workspaces | Corporate admins and invited teams |
 | Runtime | Tenant hosting, Node, Python, static, WordPress | Public websites and private business applications |
-| DNS | Authoritative public zones after delegation | Public plus internal split-horizon zones |
+| DNS | Domains.co.za managed DNS after delegation | Domains.co.za public DNS; optional internal DNS deferred |
 | Payments | PayFast/Paystack after merchant setup | Contract billing or optional payments |
 | Provisioning | MBC Hosting Engine | MBC Hosting Engine |
 | Control | Komodo | Komodo |
@@ -26,7 +26,7 @@ Or use --edition corporate. Installer flow:
 2. Generate strong database and authentication secrets under /etc/mzansicloud-box with strict file permissions.
 3. Create PostgreSQL, run Drizzle migrations, build and start React 19 + Hono.
 4. Start Komodo (Mongo, Core and Periphery) unless already running.
-5. Start Technitium DNS unless already running.
+5. Use Domains.co.za managed DNS as the planned authoritative provider; an optional Technitium lab may be added later with --with-technitium.
 6. Check live web/API/Komodo/DNS HTTP responses.
 7. Restrict web, Komodo, DNS console and test DNS listeners to 127.0.0.1; public deployment is separate.
 

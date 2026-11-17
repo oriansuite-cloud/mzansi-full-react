@@ -30,3 +30,9 @@ export async function hostingRequest<T>(path: string, input?: Record<string, str
   if (!res.ok) throw new Error(data.error?.message ?? "Request failed");
   return data as T;
 }
+
+export type DomainLookup = {
+  domain: string; available: boolean; premium: boolean | null;
+  priceZAR: number | null; currency: string;
+  source: string; requiresQuote: boolean; checkedAt: string;
+};

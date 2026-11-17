@@ -1,8 +1,8 @@
 import { loginSchema } from "@fullstack-template/shared";
 import * as Sentry from "@sentry/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,19 @@ function LoginPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 	const [loading, setLoading] = useState(false);
+  const [googleEnabled, setGoogleEnabled] = useState(false);
+  useEffect(() => {
+    void fetch("/api/public/config", { credentials: "include" })
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => setGoogleEnabled(data?.googleSignInEnabled === true))
+      .catch(() => setGoogleEnabled(false));
+  }, []);
+  const googleLogin = async () => {
+    setError(null);
+    const result = await signIn.social({ provider: "google", callbackURL: "/dashboard" });
+    if (result.error) setError(result.error.message ?? "Google sign-in could not start.");
+  };
+
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -132,16 +145,15 @@ function LoginPage() {
 					</Button>
 				</form>
 
-				<p className="text-center text-muted-foreground text-sm">
-					Don&apos;t have an account?{" "}
-					<Link
-						to="/register"
-						search={redirect ? { redirect } : {}}
-						className="text-primary underline-offset-4 hover:underline"
-					>
-						Sign up
-					</Link>
-				</p>
+
+        {googleEnabled && (
+          <Button type="button" className="w-full" variant="outline" onClick={() => void googleLogin()}>
+            Continue with Google
+          </Button>
+        )}
+        <p className="text-center text-muted-foreground text-sm">
+          Private hosting workspace. Accounts are created by an administrator.
+        </p>
 			</div>
 		</div>
 	);

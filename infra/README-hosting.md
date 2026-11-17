@@ -21,7 +21,7 @@ Verify the stack without changing configuration:
     bash infra/mzansi-box.sh doctor
     bash infra/mzansi-box.sh verify
 
-The installer generates secrets in /etc/mzansicloud-box with strict permissions. It starts PostgreSQL, runs migrations, deploys the web/API, adopts or creates a private Komodo installation, and adopts or creates Technitium DNS.
+The installer generates secrets in /etc/mzansicloud-box with strict permissions. It starts PostgreSQL, runs migrations, deploys the web/API, adopts or creates a private Komodo installation, and uses Domains.co.za managed DNS as the target provider; Technitium remains optional.
 
 **Default access is deliberately local only:**
 - Application: http://127.0.0.1:8788/
