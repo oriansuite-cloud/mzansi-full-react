@@ -1,22 +1,44 @@
-# MzansiCloud corporate hosting v0.1
-Independent standalone Docker Compose; not managed by EasyPanel.
-Deployment target VPS-1 only; original XFS tenant volume /dev/vdb is NOT mounted by this stack.
+# MzansiCloud Private Hosting in a Box
 
-## Safety
-- PostgreSQL uses a named root-disk Docker volume, no public database listener.
-- The web service is reachable only on loopback 127.0.0.1:8788.
-- DNS/hosting/app records are drafts. No provisioning, billing or authoritative DNS mutation in this release.
-- No live customer payment is accepted.
-- MZC_ALLOW_SIGNUP defaults false; initial bootstrap requires local-only temporary true setting.
-- Before public cutover the HTTPS frontend origin and Better Auth URLs must match and HTTPS must terminate on a trusted proxy.
-- Do not remove pilot-001 XFS storage or its database volume.
+Release v0.2 implements a reproducible **private installation workflow** for the Corporate and Reseller editions. The platform is React 19 + Hono + PostgreSQL, paired with Komodo and Technitium DNS. The MBC Hosting Engine adapter is still an explicit integration gate; provisioning is not yet live.
 
-## Build and launch
-On VPS-1 create /etc/mzansicloud-hosting/production.env mode 0600
-with unique POSTGRES_PASSWORD, DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL and FRONTEND_URL.
-Then:
-docker compose --env-file /etc/mzansicloud-hosting/production.env -f infra/docker-compose.hosting.yml build
-docker compose --env-file /etc/mzansicloud-hosting/production.env -f infra/docker-compose.hosting.yml up -d db
-docker compose --env-file /etc/mzansicloud-hosting/production.env -f infra/docker-compose.hosting.yml run --rm api node dist/db/migrate.mjs
-docker compose --env-file /etc/mzansicloud-hosting/production.env -f infra/docker-compose.hosting.yml up -d
-Verify curl http://127.0.0.1:8788/api/health/.
+## Fast start — fresh server only
+
+Requirements: supported Linux host (Ubuntu 24.04 LTS is the target), Docker Engine and Docker Compose v2, curl, openssl, access to container registries and root rights for initial installation.
+
+    sudo bash infra/mzansi-box.sh install --edition corporate
+
+For the white-label webhosting business:
+
+    sudo bash infra/mzansi-box.sh install --edition reseller
+
+Safe preview:
+
+    bash infra/mzansi-box.sh install --edition reseller --dry-run
+
+Verify the stack without changing configuration:
+
+    bash infra/mzansi-box.sh doctor
+    bash infra/mzansi-box.sh verify
+
+The installer generates secrets in /etc/mzansicloud-box with strict permissions. It starts PostgreSQL, runs migrations, deploys the web/API, adopts or creates a private Komodo installation, and adopts or creates Technitium DNS.
+
+**Default access is deliberately local only:**
+- Application: http://127.0.0.1:8788/
+- Komodo: http://127.0.0.1:9120/
+- Technitium console: http://127.0.0.1:5380/
+- Technitium test resolver: 127.0.0.1:5353 TCP/UDP
+
+Use an authenticated SSH tunnel from an operator workstation. Public TLS and real DNS zone delegation are later verified steps.
+
+## VPS-1 is an existing installation, not a fresh target
+
+The current MzansiCloud instance runs on VPS-1 at /opt/mzansicloud-private-hosting with a different *private secrets path* (/etc/mzansicloud-hosting/production.env). It is dangerous to regenerate credentials for it. The installer therefore **refuses fresh installation over the existing database**. Use doctor/verify only. Existing EasyPanel routes still own ports 80/443, and the Rosetta XFS tenant volume /dev/vdb must be preserved during Vultr storage recovery.
+
+## Remaining production gates
+
+Owner account bootstrap is not implemented in the one-click installer yet: public registration stays disabled. The application creates draft records; it does not yet provision hosting, activate public DNS, collect payments or deliver customer websites. The MBC Hosting Engine, Komodo privileged actions, Technitium authoritative DNS, PayFast/Paystack captures, backups/restore and public HTTPS cutover require verified integrations.
+
+See docs/engineering/one-click-box-deployment.md for the product scope and launch acceptance checklist.
+
+No installer operation may delete a volume, detach block storage, reset a legacy database, replace a public TLS proxy, or open a port on 0.0.0.0 without a separate explicit cutover procedure.

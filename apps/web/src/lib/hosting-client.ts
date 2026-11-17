@@ -9,6 +9,7 @@ export type HostingApp = {
 };
 export type Integration = { name: string; state: "reachable" | "unavailable" | "not-configured"; detail: string };
 export type HostingOverview = {
+  edition: "corporate" | "reseller";
   tenants: Tenant[]; domains: Domain[]; applications: HostingApp[];
   integrations: Integration[]; policy: string;
   counts: { tenants: number; domains: number; applications: number };

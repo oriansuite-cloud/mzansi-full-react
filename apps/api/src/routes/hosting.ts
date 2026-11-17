@@ -75,6 +75,7 @@ hostingRoutes.get("/overview", async (c) => {
     ]),
   ]);
   return c.json({ tenants, domains, applications, integrations,
+    edition: process.env.MZC_EDITION === "reseller" ? "reseller" : "corporate",
     policy: "Draft records only. No live provisioning or DNS mutation from this API.",
     counts: { tenants: tenants.length, domains: domains.length, applications: applications.length } });
 });

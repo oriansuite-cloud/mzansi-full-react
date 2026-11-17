@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 const empty: HostingOverview = {
-  tenants: [], domains: [], applications: [], integrations: [],
+  edition: "corporate", tenants: [], domains: [], applications: [], integrations: [],
   policy: "Draft records only", counts: { tenants: 0, domains: 0, applications: 0 },
 };
 
@@ -88,10 +88,10 @@ function DashboardPage() {
           <div>
             <p className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-400">
               <span className="size-2 rounded-full bg-cyan-400" />
-              Corporate private hosting / Command centre
+              {data.edition === "reseller" ? "Webhosting Business in a Box" : "Corporate Private Hosting"} / Command centre
             </p>
             <h1 className="text-3xl font-bold tracking-tight text-white md:text-4xl">
-              Your infrastructure. Your control.
+              {data.edition === "reseller" ? "Your hosting business. Your brand." : "Your infrastructure. Your control."}
             </h1>
             <p className="mt-2 text-sm text-slate-400">
               Customer-owned hosting workspace · {session?.user?.name ?? "Operator"} · Infrastructure records
