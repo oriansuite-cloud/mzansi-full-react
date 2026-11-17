@@ -1,0 +1,69 @@
+{
+	"name": "fullstack-template",
+	"version": "1.0.0",
+	"description": "A modern fullstack monorepo template with end-to-end type safety, designed for self-hosted deployment",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/nnorx/fullstack-template"
+	},
+	"keywords": [
+		"template",
+		"monorepo",
+		"fullstack",
+		"typescript",
+		"react",
+		"hono",
+		"drizzle",
+		"turborepo"
+	],
+	"private": true,
+	"packageManager": "pnpm@10.28.0",
+	"type": "module",
+	"scripts": {
+		"first-time-setup": "bash scripts/setup.sh",
+		"dev:db": "docker compose -f infra/docker-compose.dev.yml up -d --wait",
+		"dev:db:down": "docker compose -f infra/docker-compose.dev.yml down",
+		"dev:db:reset": "docker compose -f infra/docker-compose.dev.yml down -v && pnpm dev:db && pnpm db:migrate && pnpm db:seed",
+		"dev": "pnpm dev:db && pnpm --filter @fullstack-template/shared build && pnpm db:migrate && turbo run dev",
+		"build": "turbo run build",
+		"lint": "turbo run lint",
+		"format": "turbo run format",
+		"type-check": "turbo run type-check",
+		"test": "turbo run test",
+		"knip": "turbo run knip",
+		"validate": "pnpm lint && pnpm type-check && pnpm test && pnpm build",
+		"check": "pnpm format && pnpm knip && pnpm validate",
+		"typegen": "pnpm --filter @fullstack-template/api generate:openapi && pnpm --filter @fullstack-template/web typegen",
+		"db:generate": "pnpm --filter @fullstack-template/api db:generate",
+		"db:migrate": "pnpm --filter @fullstack-template/api db:migrate",
+		"db:push": "pnpm --filter @fullstack-template/api db:push",
+		"db:studio": "pnpm --filter @fullstack-template/api db:studio",
+		"db:seed": "pnpm --filter @fullstack-template/api db:seed",
+		"test:e2e": "turbo run test:e2e",
+		"db:e2e:reset": "docker exec -i $(docker compose -f infra/docker-compose.dev.yml ps -q db) psql -U postgres -c 'DROP DATABASE IF EXISTS fullstack_template_test' && docker exec -i $(docker compose -f infra/docker-compose.dev.yml ps -q db) psql -U postgres -c 'CREATE DATABASE fullstack_template_test' && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fullstack_template_test pnpm db:migrate && DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fullstack_template_test BETTER_AUTH_SECRET=e2e-test-secret-must-be-at-least-32-characters-long BETTER_AUTH_URL=http://localhost:3001 NODE_ENV=test pnpm db:seed",
+		"prepare": "husky"
+	},
+	"lint-staged": {
+		"*.{js,ts,tsx,jsx,json,css,md}": "biome check --write --no-errors-on-unmatched"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.7",
+		"husky": "^9.1.7",
+		"knip": "^6.0.0",
+		"lint-staged": "^16.4.0",
+		"turbo": "2.8.17"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": [
+			"@sentry-internal/node-cpu-profiler",
+			"@sentry/cli"
+		],
+		"overrides": {
+			"esbuild@<=0.24.2": ">=0.25.0"
+		},
+		"comments": {
+			"overrides.esbuild": "Fixes GHSA-67mh-4wv8-2f99 in drizzle-kit's deprecated @esbuild-kit dependency. Remove when drizzle-kit 1.0 stable releases."
+		}
+	}
+}

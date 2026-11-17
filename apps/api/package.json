@@ -1,0 +1,60 @@
+{
+	"name": "@fullstack-template/api",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/app.d.mts",
+			"import": "./dist/app.mjs"
+		}
+	},
+	"scripts": {
+		"dev": "tsx watch --env-file-if-exists=../../.env src/index.ts",
+		"build": "tsdown src/index.ts src/app.ts src/db/migrate.ts --format esm --dts",
+		"generate:openapi": "tsx --env-file-if-exists=../../.env src/generate-openapi.ts",
+		"start": "node dist/index.mjs",
+		"lint": "biome check",
+		"format": "biome check --write",
+		"type-check": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage",
+		"knip": "knip",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate.ts",
+		"db:migrate:prod": "node dist/db/migrate.mjs",
+		"db:push": "drizzle-kit push",
+		"db:studio": "drizzle-kit studio",
+		"db:seed": "tsx --env-file-if-exists=../../.env src/db/seed.ts"
+	},
+	"dependencies": {
+		"@fullstack-template/shared": "workspace:*",
+		"@hono/node-server": "^1",
+		"@hono/swagger-ui": "^0.6.1",
+		"@hono/zod-openapi": "^1.2.1",
+		"@sentry/node": "^10.43.0",
+		"@sentry/profiling-node": "^10.43.0",
+		"better-auth": "^1",
+		"drizzle-orm": "^0",
+		"hono": "^4",
+		"hono-rate-limiter": "^0.5.3",
+		"pino": "^10.3.1",
+		"postgres": "^3",
+		"ws": "^8.19.0",
+		"zod": "^4"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.7",
+		"@types/node": "^25.5.0",
+		"@types/ws": "^8.18.1",
+		"@vitest/coverage-v8": "^4.1.0",
+		"dotenv": "^17.2.4",
+		"drizzle-kit": "^0",
+		"knip": "^6.0.0",
+		"tsdown": "^0",
+		"tsx": "^4",
+		"typescript": "^5.9.3",
+		"vitest": "^4.1.0"
+	}
+}

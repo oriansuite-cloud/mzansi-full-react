@@ -1,0 +1,14 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"tsBuildInfoFile": "./.cache/tsconfig.node.tsbuildinfo",
+		"lib": ["ES2023"],
+		"types": ["node"],
+
+		/* Bundler mode */
+		// Allow importing .ts files for type-checking; build tools (Vite) handle .ts imports
+		"allowImportingTsExtensions": true,
+		"noEmit": true
+	},
+	"include": ["vite.config.ts"]
+}

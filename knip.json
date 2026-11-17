@@ -1,0 +1,38 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema.json",
+	"ignoreExportsUsedInFile": {
+		"interface": true,
+		"type": true
+	},
+	"tags": ["-lintignore", "+public"],
+	"workspaces": {
+		"apps/web": {
+			"entry": ["src/main.tsx", "src/routes/**/*.tsx"],
+			"ignoreExportsUsedInFile": {
+				"interface": true,
+				"type": true
+			}
+		},
+		"apps/api": {
+			"entry": [
+				"src/index.ts",
+				"src/app.ts",
+				"src/db/migrate.ts",
+				"src/db/seed.ts",
+				"src/test/helpers.ts",
+				"src/generate-openapi.ts"
+			]
+		},
+		"packages/shared": {
+			"entry": ["src/index.ts"]
+		},
+		"apps/e2e": {
+			"entry": [
+				"playwright.config.ts",
+				"tests/**/*.spec.ts",
+				"tests/global-setup.ts",
+				"fixtures/**/*.ts"
+			]
+		}
+	}
+}

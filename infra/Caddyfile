@@ -1,0 +1,43 @@
+:80 {
+	# Reverse proxy WebSocket connections to the backend service
+	handle /ws {
+		reverse_proxy api:3001 {
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# Reverse proxy API requests to the backend service
+	handle /api/* {
+		reverse_proxy api:3001 {
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# Serve static frontend files with SPA fallback
+	handle {
+		root * /srv
+		file_server
+		try_files {path} /index.html
+	}
+
+	# Compression
+	encode gzip zstd
+
+	# Security headers
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy strict-origin-when-cross-origin
+		X-XSS-Protection "1; mode=block"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		# HSTS: Force HTTPS for 2 years (effective when HTTPS is enabled)
+		# When using Cloudflare Tunnel, HTTPS is handled upstream
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		# Content Security Policy (CSP)
+		# 'unsafe-inline' for styles is required by Radix UI (shadcn/ui) for positioning/animations.
+		# To test changes in report-only mode first, rename to Content-Security-Policy-Report-Only.
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' ws: wss:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	}
+}

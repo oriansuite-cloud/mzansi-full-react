@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.json",
+	"compilerOptions": {
+		"tsBuildInfoFile": "./.cache/tsconfig.tsbuildinfo",
+		"lib": ["ES2023"],
+		"types": ["node", "vitest/globals"],
+		"outDir": "dist",
+		// Allow importing .ts files for type-checking; build tools (tsdown) handle .ts imports
+		"allowImportingTsExtensions": true,
+		"noEmit": true
+	},
+	"include": ["src", "drizzle.config.ts", "vitest.config.ts"]
+}
