@@ -1,0 +1,26 @@
+# Private, non-authoritative Technitium staging.
+# DNS_ADMIN_PASSWORD is supplied via private.env (never commit).
+name: mzansi-technitium
+services:
+  dns:
+    image: technitium/dns-server:15.6.2
+    restart: unless-stopped
+    hostname: dns1.mzansicloud.test
+    environment:
+      DNS_SERVER_DOMAIN: dns1.mzansicloud.test
+      DNS_SERVER_ADMIN_PASSWORD: ${DNS_ADMIN_PASSWORD:?private password}
+      TZ: Africa/Johannesburg
+    volumes:
+      - config:/etc/dns
+    ports:
+      - "127.0.0.1:5380:5380/tcp"
+      - "127.0.0.1:5353:53/tcp"
+      - "127.0.0.1:5353:53/udp"
+    networks: [dns-private, hosting]
+networks:
+  dns-private: {}
+  hosting:
+    external: true
+    name: mzansi-hosting-v0_private
+volumes:
+  config:

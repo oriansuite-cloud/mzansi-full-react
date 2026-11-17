@@ -14,6 +14,8 @@ export const auth = betterAuth({
 	baseURL: env.BETTER_AUTH_URL,
 	emailAndPassword: {
 		enabled: true,
+		// Operator-only initial bootstrap; public account creation is off by default.
+		disableSignUp: process.env.MZC_ALLOW_SIGNUP !== "true",
 	},
 	session: {
 		cookieCache: {

@@ -1,0 +1,56 @@
+# MzansiCloud Corporate Private Hosting — independent of EasyPanel.
+name: mzansi-hosting-v0
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mzansihosting
+      POSTGRES_DB: mzansihosting
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set this in private env}
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mzansihosting -d mzansihosting"]
+      interval: 5s
+      retries: 12
+      timeout: 3s
+    networks: [private]
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?private database URL required}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?private auth secret required}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:?auth origin required}
+      FRONTEND_URL: ${FRONTEND_URL:?frontend origin required}
+      MZC_ALLOW_SIGNUP: ${MZC_ALLOW_SIGNUP:-false}
+      MZC_KOMODO_HEALTH_URL: ${MZC_KOMODO_HEALTH_URL:-}
+      MZC_TECHNITIUM_HEALTH_URL: ${MZC_TECHNITIUM_HEALTH_URL:-}
+      MZC_ENGINE_HEALTH_URL: ${MZC_ENGINE_HEALTH_URL:-}
+      API_PORT: "3001"
+      NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
+      LOG_LEVEL: info
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+    networks: [private]
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8788:80"
+    depends_on: [api]
+    networks: [private]
+volumes:
+  pgdata:
+  uploads:
+networks:
+  private:

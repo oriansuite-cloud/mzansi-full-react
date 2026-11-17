@@ -14,6 +14,7 @@ import {
 import { authRoutes } from "./routes/auth.ts";
 import { fileDownloadRoutes } from "./routes/files.ts";
 import { healthRoutes } from "./routes/health.ts";
+import { hostingRoutes } from "./routes/hosting.ts";
 import { notificationRoutes } from "./routes/notifications.ts";
 import { projectRoutes } from "./routes/projects.ts";
 import { testRoutes } from "./routes/test.ts";
@@ -98,6 +99,7 @@ app.route("/api/files", fileDownloadRoutes);
 app.route("/api/health", healthRoutes);
 app.route("/api/notifications", notificationRoutes);
 app.route("/api/projects", projectRoutes);
+app.route("/api/hosting", hostingRoutes);
 
 // Test routes (only in development)
 if (isDev) {

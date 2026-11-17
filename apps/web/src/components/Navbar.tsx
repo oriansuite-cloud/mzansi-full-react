@@ -1,171 +1,66 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Menu } from "lucide-react";
-import { useState } from "react";
-import { NotificationBell } from "@/components/NotificationBell";
+import { Cloud, LockKeyhole } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-import {
-	Sheet,
-	SheetClose,
-	SheetContent,
-	SheetHeader,
-	SheetTitle,
-	SheetTrigger,
-} from "@/components/ui/sheet";
 import { signOut, useSession } from "@/lib/auth-client";
 import { queryKeys } from "@/lib/query-keys";
 
 export function Navbar() {
-	const queryClient = useQueryClient();
-	const { data: session, isPending } = useSession();
-	const navigate = useNavigate();
-	const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: session, isPending } = useSession();
+  const navigate = useNavigate();
+  const signedIn = Boolean(session?.user);
 
-	const handleSignOut = () => {
-		void signOut({
-			fetchOptions: {
-				onSuccess: () => {
-					queryClient.removeQueries({
-						queryKey: queryKeys.auth.session(),
-					});
-					void navigate({ to: "/" });
-				},
-			},
-		});
-	};
+  function handleSignOut() {
+    void signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          queryClient.removeQueries({ queryKey: queryKeys.auth.session() });
+          void navigate({ to: "/" });
+        },
+      },
+    });
+  }
 
-	const isAuthenticated = !!session?.user;
-
-	return (
-		<header className="flex items-center justify-between border-border border-b px-6 py-4">
-			{/* Brand + desktop nav links */}
-			<nav className="flex items-center gap-6">
-				<Link
-					to={isAuthenticated ? "/dashboard" : "/"}
-					className="font-semibold text-lg"
-				>
-					Fullstack Template
-				</Link>
-				{isAuthenticated && (
-					<>
-						<Link
-							to="/dashboard"
-							className="hidden text-muted-foreground text-sm transition-colors hover:text-foreground md:inline [&.active]:text-foreground"
-						>
-							Dashboard
-						</Link>
-						<Link
-							to="/projects"
-							className="hidden text-muted-foreground text-sm transition-colors hover:text-foreground md:inline [&.active]:text-foreground"
-						>
-							Projects
-						</Link>
-					</>
-				)}
-			</nav>
-
-			{/* Desktop actions */}
-			<div className="hidden items-center gap-2 md:flex">
-				{isPending ? null : isAuthenticated ? (
-					<>
-						<NotificationBell />
-						<span className="text-muted-foreground text-sm">
-							{session.user.name}
-						</span>
-						<Button variant="ghost" size="sm" onClick={handleSignOut}>
-							Sign Out
-						</Button>
-					</>
-				) : (
-					<>
-						<Button variant="ghost" size="sm" asChild>
-							<Link to="/login">Sign In</Link>
-						</Button>
-						<Button size="sm" asChild>
-							<Link to="/register">Sign Up</Link>
-						</Button>
-					</>
-				)}
-				<ThemeToggle />
-			</div>
-
-			{/* Mobile hamburger + sheet */}
-			<div className="flex items-center gap-2 md:hidden">
-				<ThemeToggle />
-				<Sheet open={open} onOpenChange={setOpen}>
-					<SheetTrigger asChild>
-						<Button variant="ghost" size="icon" aria-label="Open menu">
-							<Menu />
-						</Button>
-					</SheetTrigger>
-					<SheetContent side="right" className="w-64">
-						<SheetHeader>
-							<SheetTitle>Menu</SheetTitle>
-						</SheetHeader>
-						<nav className="flex flex-col gap-1 px-4">
-							{isAuthenticated && (
-								<>
-									<SheetClose asChild>
-										<Link
-											to="/dashboard"
-											className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground"
-										>
-											Dashboard
-										</Link>
-									</SheetClose>
-									<SheetClose asChild>
-										<Link
-											to="/projects"
-											className="rounded-md px-3 py-2 text-sm transition-colors hover:bg-accent [&.active]:bg-accent [&.active]:text-accent-foreground"
-										>
-											Projects
-										</Link>
-									</SheetClose>
-								</>
-							)}
-						</nav>
-						<div className="mt-auto border-t px-4 pt-4 pb-2">
-							{isPending ? null : isAuthenticated ? (
-								<div className="flex flex-col gap-3">
-									<span className="truncate text-muted-foreground text-sm">
-										{session.user.name}
-									</span>
-									<Button
-										variant="outline"
-										size="sm"
-										className="w-full"
-										onClick={() => {
-											setOpen(false);
-											handleSignOut();
-										}}
-									>
-										Sign Out
-									</Button>
-								</div>
-							) : (
-								<div className="flex flex-col gap-2">
-									<SheetClose asChild>
-										<Button size="sm" className="w-full" asChild>
-											<Link to="/register">Sign Up</Link>
-										</Button>
-									</SheetClose>
-									<SheetClose asChild>
-										<Button
-											variant="outline"
-											size="sm"
-											className="w-full"
-											asChild
-										>
-											<Link to="/login">Sign In</Link>
-										</Button>
-									</SheetClose>
-								</div>
-							)}
-						</div>
-					</SheetContent>
-				</Sheet>
-			</div>
-		</header>
-	);
+  return (
+    <header className="border-b border-slate-700 bg-[#071525] px-4 py-3 text-white md:px-8">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <Link to={signedIn ? "/dashboard" : "/"} className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-400">
+            <Cloud className="size-6" />
+          </span>
+          <span className="flex flex-col">
+            <span className="text-lg font-bold leading-tight tracking-tight">
+              Mzansi<span className="text-cyan-400">Cloud</span>
+            </span>
+            <span className="hidden text-[10px] uppercase tracking-widest text-slate-400 sm:block">
+              Private Hosting in a Box
+            </span>
+          </span>
+        </Link>
+        <div className="flex items-center gap-2 sm:gap-4">
+          {!isPending && (
+            signedIn ? (
+              <>
+                <Link to="/dashboard" className="text-sm text-slate-300 hover:text-white">Workspace</Link>
+                <span className="hidden text-xs text-slate-400 md:inline">{session?.user.name}</span>
+                <Button size="sm" variant="outline" onClick={handleSignOut}>Sign out</Button>
+              </>
+            ) : (
+              <>
+                <span className="hidden items-center gap-1 text-xs text-slate-400 md:flex">
+                  <LockKeyhole className="size-3.5" /> Private operator access
+                </span>
+                <Button size="sm" variant="outline" asChild>
+                  <Link to="/login">Sign in</Link>
+                </Button>
+              </>
+            )
+          )}
+          <ThemeToggle />
+        </div>
+      </nav>
+    </header>
+  );
 }
